@@ -37,12 +37,26 @@ export default function AnalyzeTab() {
     return d;
   }, [next, selectedSource]);
 
-  const displayBoard = useMemo(() => applyPlay(board, pending), [board, pending]);
-
   const matched = pending.length ? matchMove(board, pending, candidates) : null;
   const complete = pending.length > 0 && isComplete(board, candidates, pending);
   const best = candidates[0] ?? null;
   const focused = matched ?? (candidates[selectedIndex] ?? null);
+
+  // While building a move by tapping, preview those hops; otherwise preview the
+  // currently focused move from the list so the board shows the result.
+  const previewPlay: Play = pending.length ? pending : focused ? focused.play : [];
+  const displayBoard = useMemo(() => applyPlay(board, previewPlay), [board, previewPlay]);
+
+  // Highlight the points where your checkers ended up (final landing spots).
+  const highlight = useMemo(() => {
+    const s = new Set<number>();
+    if (pending.length === 0 && focused) {
+      for (let p = 1; p <= 24; p++) if (displayBoard.points[p] > board.points[p]) s.add(p);
+    }
+    return s;
+  }, [displayBoard, board, focused, pending.length]);
+
+  const previewNotation = pending.length === 0 && focused ? formatPlay(board, focused.play) : null;
 
   const isFocusedBest =
     !!focused && !!best && positionKey(applyPlay(board, focused.play)) === positionKey(applyPlay(board, best.play));
@@ -109,6 +123,7 @@ export default function AnalyzeTab() {
         dice={dice}
         sources={candidates.length ? sources : undefined}
         dests={candidates.length ? dests : undefined}
+        highlight={highlight}
         selectedSource={selectedSource}
         onPointClick={candidates.length ? onPointClick : undefined}
       />
@@ -128,6 +143,11 @@ export default function AnalyzeTab() {
             <div className="text-sm text-slate-300">
               Roll <span className="font-mono text-slate-100">{dice?.[0]}-{dice?.[1]}</span>
               {pending.length > 0 && !complete && <span className="text-amber-300 ml-2">building move… tap a green point</span>}
+              {previewNotation && (
+                <span className="block text-xs text-slate-400">
+                  Board shows the position after <span className="font-mono text-amber-300">{previewNotation}</span>
+                </span>
+              )}
             </div>
             <div className="flex gap-2">
               {pending.length > 0 && (
