@@ -23,6 +23,13 @@ history of the positions you've studied. Works offline as an installable PWA.
   works best on clear, top-down digital boards and is intentionally best-effort
   — always check the result before analyzing.
 
+## Architecture / maintaining
+
+See **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for the full maintainer's
+guide — the board coordinate model, the WASM engine interop, the analysis &
+explanation pipeline, persistence/spaced-repetition, the PWA setup, deployment,
+and common maintenance tasks.
+
 ## The story
 
 A short, casual blog about designing and building this *teaching* app lives in

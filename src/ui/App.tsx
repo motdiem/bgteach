@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore, Tab } from "../state/store";
 import AnalyzeTab from "./AnalyzeTab";
 import OpeningsTab from "./OpeningsTab";
+import QuizTab from "./QuizTab";
 import PositionEditor from "./PositionEditor";
 import HistoryView from "./HistoryView";
 import BlogTab from "./BlogTab";
@@ -9,17 +10,19 @@ import BlogTab from "./BlogTab";
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "analyze", label: "Analyze", icon: "🎯" },
   { id: "openings", label: "Openings", icon: "📖" },
+  { id: "quiz", label: "Quiz", icon: "🧠" },
   { id: "edit", label: "Set up", icon: "✏️" },
   { id: "history", label: "History", icon: "📜" },
 ];
 
 export default function App() {
-  const { tab, setTab, warmEngine, engineReady, resetToStart } = useStore();
+  const { tab, setTab, warmEngine, engineReady, resetToStart, dueCount, refreshDueCount } = useStore();
   const [storyOpen, setStoryOpen] = useState(false);
 
   useEffect(() => {
     warmEngine();
-  }, [warmEngine]);
+    refreshDueCount();
+  }, [warmEngine, refreshDueCount]);
 
   return (
     <div className="min-h-full flex flex-col max-w-xl mx-auto">
@@ -50,6 +53,7 @@ export default function App() {
       <main className="flex-1 px-4 pb-24">
         {tab === "analyze" && <AnalyzeTab />}
         {tab === "openings" && <OpeningsTab />}
+        {tab === "quiz" && <QuizTab />}
         {tab === "edit" && <PositionEditor />}
         {tab === "history" && <HistoryView />}
       </main>
@@ -60,12 +64,17 @@ export default function App() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-3 flex flex-col items-center gap-0.5 text-xs ${
+              className={`relative flex-1 py-3 flex flex-col items-center gap-0.5 text-xs ${
                 tab === t.id ? "text-teal-400" : "text-slate-400"
               }`}
             >
               <span className="text-xl">{t.icon}</span>
               {t.label}
+              {t.id === "quiz" && dueCount > 0 && (
+                <span className="absolute top-1.5 right-[22%] min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {dueCount > 99 ? "99+" : dueCount}
+                </span>
+              )}
             </button>
           ))}
         </div>

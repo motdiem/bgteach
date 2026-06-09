@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { Board, startingPosition } from "../engine/board";
 import { EngineMove, getMoves, initEngine } from "../engine/gnubg";
+import { dueCount } from "./history";
 
-export type Tab = "analyze" | "openings" | "edit" | "history";
+export type Tab = "analyze" | "openings" | "quiz" | "edit" | "history";
 
 interface AppState {
   tab: Tab;
@@ -13,6 +14,7 @@ interface AppState {
   loading: boolean;
   engineReady: boolean;
   error: string | null;
+  dueCount: number;
 
   setTab: (t: Tab) => void;
   setBoard: (b: Board) => void;
@@ -22,6 +24,7 @@ interface AppState {
   selectMove: (i: number) => void;
   clearAnalysis: () => void;
   warmEngine: () => void;
+  refreshDueCount: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -33,8 +36,17 @@ export const useStore = create<AppState>((set, get) => ({
   loading: false,
   engineReady: false,
   error: null,
+  dueCount: 0,
 
   setTab: (tab) => set({ tab }),
+
+  refreshDueCount: async () => {
+    try {
+      set({ dueCount: await dueCount() });
+    } catch {
+      /* ignore */
+    }
+  },
 
   setBoard: (board) => set({ board, moves: null, dice: null, selectedIndex: 0, error: null }),
 

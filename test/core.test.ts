@@ -9,12 +9,13 @@ import {
   startingPosition,
   toEngineBoard,
 } from "../src/engine/board";
-import { formatPlay, matchMove } from "../src/engine/moves";
+import { formatPlay, matchMove, nextSteps } from "../src/engine/moves";
 import { shotsAt } from "../src/analysis/shots";
 import { extractFeatures } from "../src/analysis/features";
 import { applyNotation } from "../src/engine/board";
 import { lookupOpening, lookupSecondRoll, OPENING_BEST, SECOND_ROLL } from "../src/analysis/openingBook";
 import { scanBoard } from "../src/vision/boardScan";
+import { equityLossToQuality, grade, newCard } from "../src/state/srs";
 import type { EngineMove } from "../src/engine/gnubg";
 
 const fakeMove = (play: any[]): EngineMove => ({
@@ -130,6 +131,16 @@ describe("move matching & notation", () => {
     b.points[7] = -1;
     expect(formatPlay(b, [{ from: "10", to: "7" }])).toBe("10/7*");
   });
+
+  it("nextSteps only offers legal first hops (no phantom source on an empty point)", () => {
+    // A single combined move 8/4 (8->5->4). The only legal first hop is 8->5;
+    // starting with 5->4 is illegal because nothing is on the 5-point yet.
+    const start = startingPosition();
+    const candidates = [fakeMove([{ from: "8", to: "5" }, { from: "5", to: "4" }])];
+    const steps = nextSteps(start, candidates, []);
+    const froms = steps.map((s) => s.from).sort();
+    expect(froms).toEqual(["8"]);
+  });
 });
 
 describe("features & opening book", () => {
@@ -227,6 +238,53 @@ describe("photo board scan", () => {
       youAreLight: true,
     });
     expect(detected.points.slice(1, 25)).toEqual(start.points.slice(1, 25));
+  });
+});
+
+describe("spaced repetition (SM-2)", () => {
+  const t0 = 1_000_000_000_000;
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it("maps equity loss to quality", () => {
+    expect(equityLossToQuality(0)).toBe(5); // best move
+    expect(equityLossToQuality(0.01)).toBe(4); // negligible
+    expect(equityLossToQuality(0.03)).toBe(3); // small inaccuracy (pass)
+    expect(equityLossToQuality(0.07)).toBe(2); // mistake
+    expect(equityLossToQuality(0.2)).toBe(1); // blunder
+  });
+
+  it("grows the interval on successive good reviews", () => {
+    let c = newCard("x", t0);
+    c = grade(c, 5, t0); // first pass
+    expect(c.reps).toBe(1);
+    expect(c.intervalDays).toBe(1);
+    expect(c.due).toBe(t0 + 1 * DAY);
+    c = grade(c, 5, t0); // second pass
+    expect(c.reps).toBe(2);
+    expect(c.intervalDays).toBe(6);
+    const i2 = c.intervalDays;
+    c = grade(c, 4, t0); // third pass -> interval * ease
+    expect(c.reps).toBe(3);
+    expect(c.intervalDays).toBeGreaterThan(i2);
+  });
+
+  it("a lapse resets progress and reschedules soon", () => {
+    let c = newCard("x", t0);
+    c = grade(c, 5, t0);
+    c = grade(c, 5, t0);
+    const easeBefore = c.ease;
+    c = grade(c, 1, t0); // blunder
+    expect(c.reps).toBe(0);
+    expect(c.intervalDays).toBe(0);
+    expect(c.lapses).toBe(1);
+    expect(c.ease).toBeLessThan(easeBefore);
+    expect(c.due).toBeLessThan(t0 + DAY); // due within minutes, not days
+  });
+
+  it("never drops ease below 1.3", () => {
+    let c = newCard("x", t0);
+    for (let i = 0; i < 20; i++) c = grade(c, 0, t0);
+    expect(c.ease).toBeGreaterThanOrEqual(1.3);
   });
 });
 

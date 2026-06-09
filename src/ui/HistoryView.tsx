@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { deleteEntry, HistoryEntry, listEntries } from "../state/history";
+import { deleteEntry, DeckItem, getDeck, HistoryEntry } from "../state/history";
+import { dueLabel } from "../state/srs";
 import { useStore } from "../state/store";
 import BoardView from "./Board";
 
 export default function HistoryView() {
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [items, setItems] = useState<DeckItem[]>([]);
   const [open, setOpen] = useState<string | null>(null);
-  const { setBoard, setDice, setTab } = useStore();
+  const { setBoard, setDice, setTab, refreshDueCount } = useStore();
 
-  const refresh = () => listEntries().then(setEntries);
+  const refresh = () => getDeck().then(setItems);
   useEffect(() => {
     refresh();
   }, []);
@@ -21,10 +22,11 @@ export default function HistoryView() {
 
   const remove = async (id: string) => {
     await deleteEntry(id);
+    await refreshDueCount();
     refresh();
   };
 
-  if (entries.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="text-center text-slate-400 py-16">
         <div className="text-4xl mb-2">📜</div>
@@ -36,7 +38,10 @@ export default function HistoryView() {
 
   return (
     <div className="space-y-2">
-      {entries.map((e) => (
+      <div className="text-xs text-slate-400 px-1">
+        Saved positions become flashcards — practice them in the <span className="text-teal-300">Quiz</span> tab.
+      </div>
+      {items.map(({ entry: e, card }) => (
         <div key={e.id} className="rounded-xl border border-slate-700 bg-slate-800/60 overflow-hidden">
           <button
             onClick={() => setOpen(open === e.id ? null : e.id)}
@@ -44,7 +49,10 @@ export default function HistoryView() {
           >
             <span>
               <span className="font-mono text-slate-100">{e.label}</span>
-              <span className="block text-xs text-slate-400">{new Date(e.createdAt).toLocaleString()}</span>
+              <span className="block text-xs text-slate-400">
+                {new Date(e.createdAt).toLocaleString()} · review {dueLabel(card)}
+                {card.reps > 0 && ` · ${card.reps} review${card.reps > 1 ? "s" : ""}`}
+              </span>
             </span>
             <span className="text-slate-500">{open === e.id ? "▲" : "▼"}</span>
           </button>
