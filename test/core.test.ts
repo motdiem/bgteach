@@ -12,7 +12,8 @@ import {
 import { formatPlay, matchMove } from "../src/engine/moves";
 import { shotsAt } from "../src/analysis/shots";
 import { extractFeatures } from "../src/analysis/features";
-import { lookupOpening } from "../src/analysis/openingBook";
+import { applyNotation } from "../src/engine/board";
+import { lookupOpening, lookupSecondRoll, OPENING_BEST, SECOND_ROLL } from "../src/analysis/openingBook";
 import type { EngineMove } from "../src/engine/gnubg";
 
 const fakeMove = (play: any[]): EngineMove => ({
@@ -152,5 +153,48 @@ describe("features & opening book", () => {
     expect(lookupOpening(after, [3, 1])).toBeNull();
     // positionKey changed
     expect(positionKey(after)).not.toBe(positionKey(startingPosition()));
+  });
+});
+
+describe("applyNotation", () => {
+  it("reproduces 8/5 6/5 -> the made 5-point", () => {
+    const after = applyNotation(startingPosition(), "8/5 6/5");
+    expect(after.points[5]).toBe(2);
+    expect(after.points[8]).toBe(2);
+    expect(after.points[6]).toBe(4);
+  });
+
+  it("handles multipliers and combined hops", () => {
+    const b = emptyBoard();
+    b.points[13] = 4;
+    const after = applyNotation(b, "13/11(2)");
+    expect(after.points[11]).toBe(2);
+    expect(after.points[13]).toBe(2);
+    // combined hop 24/13 nets a checker from 24 to 13
+    const c = applyNotation(startingPosition(), "24/13");
+    expect(c.points[24]).toBe(1);
+    expect(c.points[13]).toBe(6);
+  });
+});
+
+describe("second-roll book", () => {
+  it("covers all 15 openings with 21 replies each", () => {
+    expect(SECOND_ROLL.length).toBe(15);
+    for (const o of SECOND_ROLL) {
+      expect(Object.keys(o.replies).length).toBe(21);
+      expect(o.openingNotation).toBe(OPENING_BEST[o.openingRoll]);
+    }
+  });
+
+  it("matches a known post-opening position to its reply card", () => {
+    // Opponent opens 3-1 and plays 8/5 6/5; we are now the replier.
+    const opening = SECOND_ROLL.find((o) => o.openingRoll === "31")!;
+    const hit = lookupSecondRoll(opening.board, [6, 5]);
+    expect(hit).not.toBeNull();
+    expect(hit!.reply.notation).toBe(opening.replies["65"].notation);
+  });
+
+  it("returns null for the plain starting position", () => {
+    expect(lookupSecondRoll(startingPosition(), [3, 1])).toBeNull();
   });
 });

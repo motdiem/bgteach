@@ -110,6 +110,38 @@ export function applyPlay(board: Board, play: Play): Board {
   return b;
 }
 
+/**
+ * Apply a play written in standard notation (e.g. "24/23 13/9", "13/7(2)",
+ * "24/13") to a board as NET checker moves for the player on roll, ignoring the
+ * dice path. Enough to reproduce the resulting position (and hits). Returns a
+ * new board.
+ */
+export function applyNotation(board: Board, notation: string): Board {
+  const b = cloneBoard(board);
+  for (const token of notation.trim().split(/\s+/)) {
+    if (!token) continue;
+    const m = token.match(/^([0-9]+|bar)\/([0-9]+|off)\*?(?:\((\d+)\))?$/);
+    if (!m) throw new Error(`Cannot parse notation token "${token}" in "${notation}"`);
+    const [, from, to, countStr] = m;
+    const count = countStr ? parseInt(countStr, 10) : 1;
+    for (let i = 0; i < count; i++) {
+      if (from === "bar") b.youBar -= 1;
+      else b.points[parseInt(from, 10)] -= 1;
+      if (to === "off") {
+        b.youOff += 1;
+      } else {
+        const t = parseInt(to, 10);
+        if (b.points[t] === -1) {
+          b.points[t] = 0;
+          b.oppBar += 1;
+        }
+        b.points[t] += 1;
+      }
+    }
+  }
+  return b;
+}
+
 /** Canonical string used to compare positions regardless of move notation. */
 export function positionKey(b: Board): string {
   return `${b.points.slice(1, 25).join(",")}|yb${b.youBar}|ob${b.oppBar}|yo${b.youOff}|oo${b.oppOff}`;
