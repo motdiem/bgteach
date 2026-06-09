@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: pocket-backgammon-teacher
+    container_name: bg-teacher
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

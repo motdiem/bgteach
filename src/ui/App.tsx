@@ -1,12 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore, Tab } from "../state/store";
 import AnalyzeTab from "./AnalyzeTab";
+import OpeningsTab from "./OpeningsTab";
 import QuizTab from "./QuizTab";
 import PositionEditor from "./PositionEditor";
 import HistoryView from "./HistoryView";
+import BlogTab from "./BlogTab";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "analyze", label: "Analyze", icon: "🎯" },
+  { id: "openings", label: "Openings", icon: "📖" },
   { id: "quiz", label: "Quiz", icon: "🧠" },
   { id: "edit", label: "Set up", icon: "✏️" },
   { id: "history", label: "History", icon: "📜" },
@@ -14,6 +17,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 export default function App() {
   const { tab, setTab, warmEngine, engineReady, resetToStart, dueCount, refreshDueCount } = useStore();
+  const [storyOpen, setStoryOpen] = useState(false);
 
   useEffect(() => {
     warmEngine();
@@ -26,12 +30,19 @@ export default function App() {
         <h1 className="text-lg font-bold text-slate-50">
           🎲 Pocket Backgammon <span className="text-teal-400">Teacher</span>
         </h1>
-        {tab === "analyze" && (
-          <button onClick={resetToStart} className="text-xs text-slate-400 underline">
-            Reset to start
+        <div className="flex items-center gap-3">
+          {tab === "analyze" && (
+            <button onClick={resetToStart} className="text-xs text-slate-400 underline">
+              Reset to start
+            </button>
+          )}
+          <button onClick={() => setStoryOpen(true)} className="text-xs text-slate-400 underline whitespace-nowrap">
+            📖 Story
           </button>
-        )}
+        </div>
       </header>
+
+      {storyOpen && <BlogTab onClose={() => setStoryOpen(false)} />}
 
       {!engineReady && (
         <div className="mx-4 mb-2 text-xs text-slate-400 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2">
@@ -41,6 +52,7 @@ export default function App() {
 
       <main className="flex-1 px-4 pb-24">
         {tab === "analyze" && <AnalyzeTab />}
+        {tab === "openings" && <OpeningsTab />}
         {tab === "quiz" && <QuizTab />}
         {tab === "edit" && <PositionEditor />}
         {tab === "history" && <HistoryView />}

@@ -3,7 +3,7 @@ import { Board, startingPosition } from "../engine/board";
 import { EngineMove, getMoves, initEngine } from "../engine/gnubg";
 import { dueCount } from "./history";
 
-export type Tab = "analyze" | "quiz" | "edit" | "history";
+export type Tab = "analyze" | "openings" | "quiz" | "edit" | "history";
 
 interface AppState {
   tab: Tab;
