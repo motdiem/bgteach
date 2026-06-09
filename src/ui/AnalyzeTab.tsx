@@ -1,46 +1,24 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../state/store";
-import { applyPlay, positionKey, Play } from "../engine/board";
-import { isComplete, matchMove, nextSteps } from "../engine/moves";
+import { applyPlay, positionKey } from "../engine/board";
 import { explainAlternative, explainMove } from "../analysis/explain";
+import { formatPlay } from "../engine/moves";
+import { useMoveBuilder } from "./useMoveBuilder";
 import Board from "./Board";
 import DiceInput from "./DiceInput";
 import MoveList from "./MoveList";
 import Explanation from "./Explanation";
 import { newId, saveEntry } from "../state/history";
-import { formatPlay } from "../engine/moves";
 
 export default function AnalyzeTab() {
-  const { board, dice, moves, selectedIndex, loading, error, setDice, analyze, selectMove, clearAnalysis } = useStore();
-  const [pending, setPending] = useState<Play>([]);
-  const [selectedSource, setSelectedSource] = useState<number | "bar" | null>(null);
+  const { board, dice, moves, selectedIndex, loading, error, setDice, analyze, selectMove, clearAnalysis, refreshDueCount } =
+    useStore();
   const [saved, setSaved] = useState(false);
 
   const candidates = moves ?? [];
+  const builder = useMoveBuilder(board, candidates);
+  const { pending, selectedSource, sources, dests, displayBoard, matched, complete, onPointClick, reset } = builder;
 
-  const next = useMemo(
-    () => (candidates.length ? nextSteps(board, candidates, pending) : []),
-    [board, candidates, pending]
-  );
-  const sources = useMemo(() => {
-    const s = new Set<number | "bar">();
-    next.forEach((h) => s.add(h.from === "bar" ? "bar" : parseInt(h.from, 10)));
-    return s;
-  }, [next]);
-  const dests = useMemo(() => {
-    const d = new Set<number | "off">();
-    if (selectedSource != null) {
-      next
-        .filter((h) => (h.from === "bar" ? "bar" : parseInt(h.from, 10)) === selectedSource)
-        .forEach((h) => d.add(h.to === "off" ? "off" : parseInt(h.to, 10)));
-    }
-    return d;
-  }, [next, selectedSource]);
-
-  const displayBoard = useMemo(() => applyPlay(board, pending), [board, pending]);
-
-  const matched = pending.length ? matchMove(board, pending, candidates) : null;
-  const complete = pending.length > 0 && isComplete(board, candidates, pending);
   const best = candidates[0] ?? null;
   const focused = matched ?? (candidates[selectedIndex] ?? null);
 
@@ -54,37 +32,14 @@ export default function AnalyzeTab() {
       : explainAlternative(board, best, focused, dice);
   }, [focused, best, dice, isFocusedBest, board]);
 
-  const resetBuild = () => {
-    setPending([]);
-    setSelectedSource(null);
-  };
-
-  const onPointClick = (point: number | "bar" | "off") => {
-    if (!candidates.length) return;
-    // tapping a highlighted source selects it
-    if (point !== "off" && sources.has(point)) {
-      setSelectedSource(point);
-      return;
-    }
-    // tapping a destination for the selected source adds a hop
-    if (selectedSource != null && point !== "bar" && dests.has(point)) {
-      const hop = {
-        from: selectedSource === "bar" ? "bar" : String(selectedSource),
-        to: point === "off" ? "off" : String(point),
-      };
-      setPending([...pending, hop]);
-      setSelectedSource(null);
-    }
-  };
-
   const onAnalyze = () => {
-    resetBuild();
+    reset();
     setSaved(false);
     analyze();
   };
 
   const onSelectMove = (i: number) => {
-    resetBuild();
+    reset();
     selectMove(i);
   };
 
@@ -100,6 +55,7 @@ export default function AnalyzeTab() {
       moves: moves.slice(0, 8),
     });
     setSaved(true);
+    await refreshDueCount();
   };
 
   return (
@@ -131,13 +87,13 @@ export default function AnalyzeTab() {
             </div>
             <div className="flex gap-2">
               {pending.length > 0 && (
-                <button onClick={resetBuild} className="text-xs rounded-lg bg-slate-700 px-3 py-1.5 active:scale-95">
+                <button onClick={reset} className="text-xs rounded-lg bg-slate-700 px-3 py-1.5 active:scale-95">
                   Clear
                 </button>
               )}
               <button
                 onClick={() => {
-                  resetBuild();
+                  reset();
                   setSaved(false);
                   clearAnalysis();
                 }}

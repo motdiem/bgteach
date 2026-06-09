@@ -114,6 +114,25 @@ function stateSequence(board: Board, play: Play): string[] {
 }
 
 /**
+ * Is this ordering of hops legal step-by-step? Each hop must move a checker that
+ * actually exists at its source given the running board. Filters out spurious
+ * orderings (e.g. starting 8/5 5/4 with the 5/4 hop, when nothing is on 5 yet),
+ * which would otherwise advertise phantom sources/destinations.
+ */
+function isLegalOrder(board: Board, play: Play): boolean {
+  let b = board;
+  for (const hop of play) {
+    if (hop.from === "bar") {
+      if (b.youBar <= 0) return false;
+    } else if (b.points[N(hop.from)] <= 0) {
+      return false;
+    }
+    b = applyPlay(b, [hop]);
+  }
+  return true;
+}
+
+/**
  * Given the chosen hops so far (`pending`), return the set of legal next hops
  * for tap-to-move, derived from the candidate plays. Returns an empty array
  * when the move is already complete.
@@ -125,6 +144,7 @@ export function nextSteps(board: Board, candidates: EngineMove[], pending: Play)
   for (const cand of candidates) {
     if (cand.play.length <= pending.length) continue;
     for (const ord of orderings(cand.play)) {
+      if (!isLegalOrder(board, ord)) continue;
       const seq = stateSequence(board, ord);
       // Does this ordering reproduce the pending prefix exactly?
       let ok = true;
