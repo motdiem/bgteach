@@ -658,6 +658,19 @@ docker run --rm -p 8080:8080 pocket-backgammon-teacher   # http://localhost:8080
 
 No env vars or secrets. Terminate TLS at your reverse proxy (PWA needs HTTPS).
 
+### Netlify (or any static host)
+
+For managed static hosting you don't need Docker at all — just publish `dist/`.
+The repo ships a [`netlify.toml`](../netlify.toml) with the build command, the
+`dist` publish dir, `NODE_VERSION=20`, an SPA fallback redirect, and `no-cache`
+headers for `sw.js`/`index.html`. Connect the repo (auto-deploys on push) or run
+`npm run build` then `npx netlify-cli deploy --prod --dir=dist`.
+
+The two host-specific requirements are the same everywhere and both are handled
+automatically by Netlify: serve `.wasm` as `application/wasm`, and serve over
+HTTPS (for the service worker). Any static host that does those two things works
+the same way — point it at `dist/` with `index.html` as the SPA fallback.
+
 ---
 
 ## 14. Common maintenance tasks
