@@ -18,6 +18,13 @@ history of the positions you've studied. Works offline as an installable PWA.
 - **No backend.** Everything — engine, analysis, and history (IndexedDB) — runs
   in the browser. The service worker caches the engine so it works offline.
 
+## The story
+
+A short, casual blog about designing and building this *teaching* app lives in
+[`src/content/blog/`](src/content/blog/) and is readable in-app via the **📖
+Story** link in the header (the idea, leaning on gnubg, turning equity into
+English, the opening/second-roll book, and spaced-repetition quizzing).
+
 ## Develop
 
 ```bash
