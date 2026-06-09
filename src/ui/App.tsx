@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { useStore, Tab } from "../state/store";
 import AnalyzeTab from "./AnalyzeTab";
+import OpeningsTab from "./OpeningsTab";
 import PositionEditor from "./PositionEditor";
 import HistoryView from "./HistoryView";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "analyze", label: "Analyze", icon: "🎯" },
+  { id: "openings", label: "Openings", icon: "📖" },
   { id: "edit", label: "Set up", icon: "✏️" },
   { id: "history", label: "History", icon: "📜" },
 ];
@@ -38,6 +40,7 @@ export default function App() {
 
       <main className="flex-1 px-4 pb-24">
         {tab === "analyze" && <AnalyzeTab />}
+        {tab === "openings" && <OpeningsTab />}
         {tab === "edit" && <PositionEditor />}
         {tab === "history" && <HistoryView />}
       </main>

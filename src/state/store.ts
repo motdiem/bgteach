@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Board, startingPosition } from "../engine/board";
 import { EngineMove, getMoves, initEngine } from "../engine/gnubg";
 
-export type Tab = "analyze" | "edit" | "history";
+export type Tab = "analyze" | "openings" | "edit" | "history";
 
 interface AppState {
   tab: Tab;
