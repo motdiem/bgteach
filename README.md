@@ -70,6 +70,23 @@ forward to the container's port `8080` and terminate TLS there; serving over
 HTTPS is required for the PWA/service-worker to install. The first visit
 downloads the engine once, after which the app works offline.
 
+## Deploy to Netlify
+
+The Docker setup above is for self-hosting; on Netlify you don't need it — the
+included [`netlify.toml`](netlify.toml) already sets the build command
+(`npm run build`), publish directory (`dist`), Node 20, an SPA fallback, and
+`no-cache` for the service worker / app shell.
+
+- **Recommended — connect the repo:** point Netlify at this repo; it reads
+  `netlify.toml` and auto-deploys on every push to `main`. Nothing else to
+  configure.
+- **Or build locally and upload:** `npm run build`, then
+  `npx netlify-cli deploy --prod --dir=dist` (or drag `dist/` into the Netlify
+  UI).
+
+Netlify serves `.wasm` as `application/wasm` and is HTTPS by default, so the
+~18 MB engine loads and the PWA installs with no extra setup.
+
 ## Regenerating the engine
 
 `public/engine/gnubg.wasm` and `wasm_exec.js` are built from `foochu/bgweb-api`:

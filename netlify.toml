@@ -1,0 +1,33 @@
+# Netlify deployment for the static PWA.
+#
+# The app is fully client-side: Netlify just builds it and serves dist/. There
+# are no env vars or secrets. .wasm is served as application/wasm automatically,
+# which the engine's WebAssembly.instantiateStreaming requires.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 5 requires Node 18+; match the Dockerfile's Node 20.
+  NODE_VERSION = "20"
+
+# SPA fallback: a hard refresh on any path still serves the app shell. (This app
+# keeps navigation in state rather than a router, so it's belt-and-suspenders.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Let the service worker and app shell update promptly. The hashed assets in
+# /assets/ and /engine/ are content-addressed, so Netlify's default long cache
+# for them is correct and left untouched.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
