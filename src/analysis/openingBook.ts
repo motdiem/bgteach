@@ -4,6 +4,10 @@
 // the generic feature explanation.
 
 import { Board, positionKey, startingPosition } from "../engine/board";
+import { SECOND_ROLL, SECOND_ROLL_BY_KEY, SecondRollOpening, SecondRollReply } from "./secondRollBook";
+
+export { SECOND_ROLL };
+export type { SecondRollOpening, SecondRollReply };
 
 export interface OpeningEntry {
   bestNotation: string; // for display; the engine still supplies the ranking
@@ -47,6 +51,13 @@ const BOOK: Record<string, OpeningEntry> = {
       "The two best plays are nearly tied. 13/11 6/5 'slots' the golden 5-point — you drop a builder there hoping to cover it next turn and make your best point. The quieter 24/23 13/11 splits your back checkers and brings down a builder, avoiding the risk of being hit on the 5.",
     alternatives:
       "Slotting (13/11 6/5) is a touch more aggressive; the split (24/23 13/11) is steadier. Bots rate them within a hair, so either is fine — slot when you want the upside of the 5-point.",
+  },
+  "32": {
+    bestNotation: "24/21 13/11",
+    title: "Split and build",
+    prose:
+      "Play 24/21 13/11: split your back checkers to the 21-point and bring a builder down to the 11. The split angles for an advanced anchor while the builder helps you make a new point next turn. Modern rollouts give this a hair over the pure two-down builder play.",
+    alternatives: "13/11 13/10 (two builders down) and 24/22 13/10 are close alternatives.",
   },
   "41": {
     bestNotation: "24/23 13/9",
@@ -117,4 +128,29 @@ export function lookupOpening(board: Board, dice: [number, number]): OpeningEntr
   if (positionKey(board) !== START_KEY) return null;
   const key = [dice[0], dice[1]].sort((a, b) => b - a).join("");
   return BOOK[key] ?? null;
+}
+
+/** The recommended play for each opening roll, keyed high-low (e.g. "31"). */
+export const OPENING_BEST: Record<string, string> = Object.fromEntries(
+  Object.entries(BOOK).map(([k, v]) => [k, v.bestNotation])
+);
+
+/** Normalize a dice pair to the book key, e.g. [1,3] -> "31". */
+export function rollKey(dice: [number, number]): string {
+  return [dice[0], dice[1]].sort((a, b) => b - a).join("");
+}
+
+/**
+ * Look up the curated second-roll reply for a position + dice, if the position
+ * is one of the 15 known post-opening positions (replier on roll). Returns the
+ * matching opening context and the best-reply explanation, or null.
+ */
+export function lookupSecondRoll(
+  board: Board,
+  dice: [number, number]
+): { opening: SecondRollOpening; reply: SecondRollReply } | null {
+  const opening = SECOND_ROLL_BY_KEY.get(positionKey(board));
+  if (!opening) return null;
+  const reply = opening.replies[rollKey(dice)];
+  return reply ? { opening, reply } : null;
 }
