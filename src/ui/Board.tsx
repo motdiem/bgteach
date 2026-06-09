@@ -187,6 +187,7 @@ export default function Board({
             {/* tap target */}
             {onPointClick && (
               <rect
+                data-point={p}
                 x={g.left}
                 y={g.top ? BORDER : H - BORDER - PT_H}
                 width={PW}
@@ -206,6 +207,7 @@ export default function Board({
       {/* bar tap target */}
       {onPointClick && (sources?.has("bar") || board.youBar > 0) && (
         <rect
+          data-point="bar"
           x={BORDER + 6 * PW}
           y={H / 2}
           width={BAR_W}
@@ -220,6 +222,7 @@ export default function Board({
       {/* off tray tap target + borne-off counts */}
       {onPointClick && dests?.has("off") && (
         <rect
+          data-point="off"
           x={W - BORDER - TRAY_W}
           y={BORDER}
           width={TRAY_W}
