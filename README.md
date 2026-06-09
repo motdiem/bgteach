@@ -18,6 +18,13 @@ history of the positions you've studied. Works offline as an installable PWA.
 - **No backend.** Everything — engine, analysis, and history (IndexedDB) — runs
   in the browser. The service worker caches the engine so it works offline.
 
+## Architecture / maintaining
+
+See **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for the full maintainer's
+guide — the board coordinate model, the WASM engine interop, the analysis &
+explanation pipeline, persistence/spaced-repetition, the PWA setup, deployment,
+and common maintenance tasks.
+
 ## Develop
 
 ```bash
