@@ -27,6 +27,30 @@ npm test         # unit tests (board math, shot counting, move matching, book)
 npm run build    # production PWA build into dist/
 ```
 
+## Deploy with Docker
+
+The app is a static PWA, so deployment is just static hosting. The included
+multi-stage `Dockerfile` builds the site with Node and serves it with nginx
+(correct `application/wasm` MIME type, SPA fallback, long-cache for hashed
+assets, and pre-gzipped files so the ~18 MB engine ships as ~9 MB).
+
+```bash
+# Build and run with Docker
+docker build -t pocket-backgammon-teacher .
+docker run --rm -p 8080:8080 pocket-backgammon-teacher
+# → open http://localhost:8080
+
+# …or with Docker Compose
+docker compose up --build -d      # serves on http://localhost:8080
+docker compose down
+```
+
+No environment variables or secrets are needed — the engine, analysis, and
+history all run in the browser. Behind a reverse proxy (Caddy, Traefik, nginx),
+forward to the container's port `8080` and terminate TLS there; serving over
+HTTPS is required for the PWA/service-worker to install. The first visit
+downloads the engine once, after which the app works offline.
+
 ## Regenerating the engine
 
 `public/engine/gnubg.wasm` and `wasm_exec.js` are built from `foochu/bgweb-api`:
