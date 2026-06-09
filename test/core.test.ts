@@ -13,6 +13,7 @@ import { formatPlay, matchMove } from "../src/engine/moves";
 import { shotsAt } from "../src/analysis/shots";
 import { extractFeatures } from "../src/analysis/features";
 import { lookupOpening } from "../src/analysis/openingBook";
+import { scanBoard } from "../src/vision/boardScan";
 import type { EngineMove } from "../src/engine/gnubg";
 
 const fakeMove = (play: any[]): EngineMove => ({
@@ -152,5 +153,78 @@ describe("features & opening book", () => {
     expect(lookupOpening(after, [3, 1])).toBeNull();
     // positionKey changed
     expect(positionKey(after)).not.toBe(positionKey(startingPosition()));
+  });
+});
+
+describe("photo board scan", () => {
+  // Render a board to a synthetic RGBA image (gray felt + light/dark stacks),
+  // then assert the scanner recovers it. Exercises geometry, counting, colour
+  // classification and the column→point mapping.
+  const SIZE = 600;
+  const BAR = 0.07;
+  const colW = (1 - BAR) / 12;
+  const discV = colW; // square image -> aspect 1
+  const centerU = (right: boolean, i: number) =>
+    right ? (1 - BAR) / 2 + BAR + i * colW + colW / 2 : i * colW + colW / 2;
+
+  function locate(p: number): { top: boolean; right: boolean; i: number } {
+    if (p <= 6) return { top: false, right: true, i: 6 - p };
+    if (p <= 12) return { top: false, right: false, i: 12 - p };
+    if (p <= 18) return { top: true, right: false, i: p - 13 };
+    return { top: true, right: true, i: p - 19 };
+  }
+
+  function render(board: ReturnType<typeof startingPosition>): {
+    width: number;
+    height: number;
+    data: Uint8ClampedArray;
+  } {
+    const data = new Uint8ClampedArray(SIZE * SIZE * 4);
+    for (let i = 0; i < SIZE * SIZE; i++) {
+      data[i * 4] = 115;
+      data[i * 4 + 1] = 115;
+      data[i * 4 + 2] = 115; // gray bg, luma ~0.45 (between thresholds)
+      data[i * 4 + 3] = 255;
+    }
+    const paintRect = (u0: number, v0: number, u1: number, v1: number, val: number) => {
+      const x0 = Math.round(u0 * SIZE),
+        x1 = Math.round(u1 * SIZE);
+      const y0 = Math.round(v0 * SIZE),
+        y1 = Math.round(v1 * SIZE);
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++) {
+          const idx = (y * SIZE + x) * 4;
+          data[idx] = data[idx + 1] = data[idx + 2] = val;
+        }
+    };
+    for (let p = 1; p <= 24; p++) {
+      const c = board.points[p];
+      if (c === 0) continue;
+      const n = Math.abs(c);
+      const val = c > 0 ? 240 : 20; // your=light, opp=dark
+      const { top, right, i } = locate(p);
+      const u = centerU(right, i);
+      for (let k = 0; k < n; k++) {
+        const vc = top ? (k + 0.5) * discV : 1 - (k + 0.5) * discV;
+        paintRect(u - colW * 0.45, vc - discV * 0.45, u + colW * 0.45, vc + discV * 0.45, val);
+      }
+    }
+    return { width: SIZE, height: SIZE, data };
+  }
+
+  it("recovers the standard starting position from a clean render", () => {
+    const start = startingPosition();
+    const img = render(start);
+    const detected = scanBoard(img, {
+      corners: [
+        { x: 0, y: 0 },
+        { x: SIZE, y: 0 },
+        { x: SIZE, y: SIZE },
+        { x: 0, y: SIZE },
+      ],
+      homeQuadrant: "br",
+      youAreLight: true,
+    });
+    expect(detected.points.slice(1, 25)).toEqual(start.points.slice(1, 25));
   });
 });

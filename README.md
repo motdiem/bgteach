@@ -17,6 +17,11 @@ history of the positions you've studied. Works offline as an installable PWA.
   engine's numbers. The 15 opening rolls use a curated rollout-based book.
 - **No backend.** Everything — engine, analysis, and history (IndexedDB) — runs
   in the browser. The service worker caches the engine so it works offline.
+- **Set up from a photo (beta).** In the *Set up* tab you can load a photo or
+  screenshot of a board; an on-device, offline heuristic estimates the checker
+  positions and drops them into the editor for you to confirm and correct. It
+  works best on clear, top-down digital boards and is intentionally best-effort
+  — always check the result before analyzing.
 
 ## Develop
 
