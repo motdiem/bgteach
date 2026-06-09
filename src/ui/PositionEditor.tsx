@@ -3,6 +3,7 @@ import { Board, checkerCounts, cloneBoard, emptyBoard, flipPerspective } from ".
 import { PRESETS } from "../analysis/presets";
 import { useStore } from "../state/store";
 import BoardView from "./Board";
+import PhotoImport from "./PhotoImport";
 
 type Tool = "you" | "opp" | "remove";
 
@@ -10,6 +11,7 @@ export default function PositionEditor() {
   const { board, setBoard, setTab } = useStore();
   const [draft, setDraft] = useState<Board>(cloneBoard(board));
   const [tool, setTool] = useState<Tool>("you");
+  const [showImport, setShowImport] = useState(false);
 
   const counts = checkerCounts(draft);
 
@@ -49,6 +51,22 @@ export default function PositionEditor() {
   return (
     <div className="space-y-4">
       <BoardView board={draft} onPointClick={onPointClick} selectedSource={null} />
+
+      <button
+        onClick={() => setShowImport((s) => !s)}
+        className="w-full rounded-lg bg-slate-700 text-slate-100 py-2 text-sm font-medium active:scale-95"
+      >
+        {showImport ? "Hide photo import" : "📷 Set up from a photo"}
+      </button>
+
+      {showImport && (
+        <PhotoImport
+          onDetected={(b) => {
+            setDraft(b);
+            setShowImport(false);
+          }}
+        />
+      )}
 
       <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 space-y-3">
         <div className="text-xs uppercase tracking-wide text-slate-400">Tap a point to place / remove checkers</div>
